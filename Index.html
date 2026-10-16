@@ -1,0 +1,82 @@
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>باشگاه فروشندگان عطر</title>
+<style>
+body{font-family:Tahoma,Arial;background:#f4f5f8;margin:0;padding:20px;color:#222}
+main{max-width:420px;margin:35px auto;background:white;padding:25px;border-radius:20px;box-shadow:0 5px 25px #ddd}
+h2{text-align:center;color:#23375b}
+p{text-align:center;color:#666}
+input,button{box-sizing:border-box;width:100%;padding:15px;margin:9px 0;border-radius:10px;font-size:16px}
+input{border:1px solid #ccc}
+button{background:#23375b;color:white;border:0}
+.secondary{background:#14856c}
+#scanner{display:none}
+video{width:100%;border-radius:12px}
+#result{text-align:center;margin-top:15px}
+</style>
+</head>
+<body>
+<main>
+<h2>باشگاه فروشندگان عطر</h2>
+<p>سامانه ثبت فروش و امتیاز فروشندگان</p>
+<section id="register">
+<input id="shop" placeholder="نام فروشگاه">
+<input id="owner" placeholder="نام فروشنده">
+<input id="phone" type="tel" placeholder="شماره موبایل">
+<button onclick="register()">ثبت اطلاعات</button>
+</section>
+<section id="scanner">
+<p id="welcome"></p>
+<button class="secondary" onclick="scan()">اسکن کد عطر</button>
+<video id="camera" autoplay playsinline muted></video>
+<p id="result"></p>
+</section>
+</main>
+<script>
+function register(){
+const shop=document.getElementById('shop').value.trim();
+const owner=document.getElementById('owner').value.trim();
+const phone=document.getElementById('phone').value.trim();
+if(!shop||!owner||!/^09\d{9}$/.test(phone)){
+alert('اطلاعات را کامل و شماره موبایل معتبر وارد کنید');
+return;
+}
+document.getElementById('register').style.display='none';
+document.getElementById('scanner').style.display='block';
+document.getElementById('welcome').textContent='خوش آمدید، '+owner;
+}
+async function scan(){
+const result=document.getElementById('result');
+if(!('BarcodeDetector' in window)){
+result.textContent='اسکن مستقیم در این مرورگر پشتیبانی نمی‌شود؛ در نسخه بعدی اسکنر سازگار اضافه می‌کنیم.';
+return;
+}
+try{
+const detector=new BarcodeDetector({formats:['qr_code']});
+const video=document.getElementById('camera');
+const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+video.srcObject=stream;
+await video.play();
+async function detect(){
+if(!video.srcObject)return;
+try{
+const codes=await detector.detect(video);
+if(codes.length){
+result.textContent='کد خوانده شد: '+codes[0].rawValue;
+stream.getTracks().forEach(t=>t.stop());
+video.srcObject=null;
+return;
+}
+}catch(e){}
+requestAnimationFrame(detect);
+}
+detect();
+}catch(e){result.textContent='دسترسی دوربین ممکن نشد.';}
+}
+</script>
+</body>
+</html>
