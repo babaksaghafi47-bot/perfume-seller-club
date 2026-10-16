@@ -1,82 +1,30 @@
-
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>باشگاه فروشندگان عطر</title>
 <style>
-body{font-family:Tahoma,Arial;background:#f4f5f8;margin:0;padding:20px;color:#222}
-main{max-width:420px;margin:35px auto;background:white;padding:25px;border-radius:20px;box-shadow:0 5px 25px #ddd}
-h2{text-align:center;color:#23375b}
-p{text-align:center;color:#666}
-input,button{box-sizing:border-box;width:100%;padding:15px;margin:9px 0;border-radius:10px;font-size:16px}
-input{border:1px solid #ccc}
-button{background:#23375b;color:white;border:0}
-.secondary{background:#14856c}
-#scanner{display:none}
-video{width:100%;border-radius:12px}
-#result{text-align:center;margin-top:15px}
+*{box-sizing:border-box}body{margin:0;background:#f2f3f6;font-family:Tahoma,Arial,sans-serif;color:#26385d}main{max-width:480px;margin:40px auto;padding:28px;background:#fff;border-radius:24px;min-height:65vh}h1{text-align:center;font-size:26px}p{text-align:center;color:#666;line-height:1.9}input,button{font:inherit;width:100%;padding:15px;margin:9px 0;border-radius:12px}input{border:1px solid #bbb}button{background:#26385d;color:#fff;border:0;cursor:pointer}.green{background:#39866e}.muted{background:#e8edf1;color:#26385d}video{width:100%;border-radius:14px;background:#111;max-height:380px}#scanner,#welcome{display:none}#status,#result{white-space:pre-wrap;overflow-wrap:anywhere;text-align:center;line-height:1.8;margin-top:12px}#result{font-weight:bold}small{color:#777;display:block;text-align:center;line-height:1.7}
 </style>
-</head>
-<body>
-<main>
-<h2>باشگاه فروشندگان عطر</h2>
-<p>سامانه ثبت فروش و امتیاز فروشندگان</p>
-<section id="register">
-<input id="shop" placeholder="نام فروشگاه">
-<input id="owner" placeholder="نام فروشنده">
-<input id="phone" type="tel" placeholder="شماره موبایل">
-<button onclick="register()">ثبت اطلاعات</button>
-</section>
-<section id="scanner">
-<p id="welcome"></p>
-<button class="secondary" onclick="scan()">اسکن کد عطر</button>
-<video id="camera" autoplay playsinline muted></video>
-<p id="result"></p>
-</section>
+</head><body><main>
+<h1>باشگاه فروشندگان عطر</h1><p>سامانه آزمایشی ثبت فروش و اسکن کد اصالت</p>
+<section id="register"><input id="shop" placeholder="نام فروشگاه" autocomplete="organization"><input id="owner" placeholder="نام مالک فروشگاه"><input id="phone" placeholder="شماره موبایل" inputmode="tel" autocomplete="tel"><button id="save">ثبت اطلاعات آزمایشی</button></section>
+<section id="welcome"><p id="greeting"></p><button id="start" class="green">اسکن کد عطر</button><button id="change" class="muted">تغییر اطلاعات آزمایشی</button></section>
+<section id="scanner"><video id="video" playsinline muted autoplay></video><p id="status">در حال آماده‌سازی دوربین…</p><div id="result"></div><button id="retry" class="green">اسکن دوباره</button><button id="stop" class="muted">بستن دوربین</button></section>
+<small>نسخه آزمایشی — اطلاعات فقط در همین مرورگر ذخیره می‌شوند. هیچ فروش یا پاداشی در سرور ثبت نمی‌شود.</small>
 </main>
+<script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
 <script>
-function register(){
-const shop=document.getElementById('shop').value.trim();
-const owner=document.getElementById('owner').value.trim();
-const phone=document.getElementById('phone').value.trim();
-if(!shop||!owner||!/^09\d{9}$/.test(phone)){
-alert('اطلاعات را کامل و شماره موبایل معتبر وارد کنید');
-return;
-}
-document.getElementById('register').style.display='none';
-document.getElementById('scanner').style.display='block';
-document.getElementById('welcome').textContent='خوش آمدید، '+owner;
-}
-async function scan(){
-const result=document.getElementById('result');
-if(!('BarcodeDetector' in window)){
-result.textContent='اسکن مستقیم در این مرورگر پشتیبانی نمی‌شود؛ در نسخه بعدی اسکنر سازگار اضافه می‌کنیم.';
-return;
-}
-try{
-const detector=new BarcodeDetector({formats:['qr_code']});
-const video=document.getElementById('camera');
-const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-video.srcObject=stream;
-await video.play();
-async function detect(){
-if(!video.srcObject)return;
-try{
-const codes=await detector.detect(video);
-if(codes.length){
-result.textContent='کد خوانده شد: '+codes[0].rawValue;
-stream.getTracks().forEach(t=>t.stop());
-video.srcObject=null;
-return;
-}
-}catch(e){}
-requestAnimationFrame(detect);
-}
-detect();
-}catch(e){result.textContent='دسترسی دوربین ممکن نشد.';}
-}
-</script>
-</body>
-</html>
+const $=id=>document.getElementById(id);let reader=null,stream=null,active=false;
+function show(id){for(const x of ['register','welcome','scanner'])$(x).style.display=x===id?'block':'none'}
+function greet(){let d=JSON.parse(localStorage.getItem('mj_demo_shop')||'null');if(!d)return show('register');$('greeting').textContent='خوش آمدید، '+d.owner;show('welcome')}
+$('save').onclick=()=>{let shop=$('shop').value.trim(),owner=$('owner').value.trim(),phone=$('phone').value.trim();if(!shop||!owner||!/^(\+98|0)?9\d{9}$/.test(phone)){alert('نام فروشگاه، نام مالک و شماره موبایل معتبر وارد کنید.');return}localStorage.setItem('mj_demo_shop',JSON.stringify({shop,owner,phone}));greet()};
+$('change').onclick=()=>{stop();localStorage.removeItem('mj_demo_shop');show('register')};
+function stop(){active=false;if(reader){try{reader.reset()}catch(e){}reader=null}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}const v=$('video');if(v.srcObject){v.srcObject.getTracks().forEach(t=>t.stop());v.srcObject=null}}
+async function scan(){stop();show('scanner');$('result').textContent='';$('status').textContent='در حال درخواست دسترسی دوربین…';if(!navigator.mediaDevices?.getUserMedia){$('status').textContent='دسترسی دوربین در این مرورگر ممکن نیست. Safari و HTTPS را بررسی کنید.';return}if(!window.ZXing){$('status').textContent='کتابخانه اسکنر بارگذاری نشد. اتصال اینترنت را بررسی و صفحه را تازه‌سازی کنید.';return}
+try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});$('video').srcObject=stream;await $('video').play();active=true;
+const hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.DATA_MATRIX,ZXing.BarcodeFormat.QR_CODE]);reader=new ZXing.BrowserMultiFormatReader(hints,250);$('status').textContent='کد دوبعدی برچسب اصالت را داخل تصویر قرار دهید.';
+reader.decodeFromVideoElementContinuously($('video'),(result,err)=>{if(!active||!result)return;let value=result.getText();$('result').textContent='محتوای خوانده‌شده:\n'+value;$('status').textContent='کد خوانده شد. لطفاً محتوا را با UID چاپ‌شده روی برچسب مقایسه کنید.';stop()});
+}catch(e){$('status').textContent='دوربین باز نشد: '+(e?.message||e)+'. اجازه دوربین را در تنظیمات Safari بررسی کنید.';stop()}}
+$('start').onclick=scan;$('retry').onclick=scan;$('stop').onclick=()=>{stop();greet()};document.addEventListener('visibilitychange',()=>{if(document.hidden&&active){stop();$('status').textContent='اسکن متوقف شد. برای ادامه «اسکن دوباره» را بزنید.'}});greet();
+</script></body></html>
